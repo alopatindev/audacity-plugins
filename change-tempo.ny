@@ -1,5 +1,5 @@
 ;nyquist plug-in
-;version 1
+;version 4
 ;type process
 ;name "Change Tempo..."
 ;action "Changing Tempo..."
@@ -15,6 +15,6 @@
 (setq main-command (format nil "ffmpeg -v error -i ~S -filter:a atempo=~S -vn ~S" input-file factor output-file))
 
 (system cleanup-command)
-(s-save s input-file)
+(s-save *track* input-file)
 (system main-command)
 (s-read output-file)

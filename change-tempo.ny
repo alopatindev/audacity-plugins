@@ -25,7 +25,7 @@
 (setq output-file (strcat temp-dir "audacity-output.wav"))
 
 (setq cleanup-command (strcat "rm -f " input-file " " output-file))
-(setq main-command (format nil "ffmpeg -v error -i ~S -filter:a atempo=~S -vn ~S" input-file factor output-file))
+(setq main-command (format nil "ffmpeg -y -hide_banner -loglevel quiet -i ~S -filter:a atempo=~S -vn ~S" input-file factor output-file))
 
 (system cleanup-command)
 (s-save *track* input-file)

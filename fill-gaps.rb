@@ -86,7 +86,7 @@ def compute_segments(temp_dir, options)
 end
 
 def ffmpeg(input, output, args)
-  `ffmpeg -v error -y -i #{input} #{args} #{output}`
+  `ffmpeg -y -hide_banner -loglevel quiet -i #{input} #{args} #{output}`
 end
 
 def ffmpeg_cut(input, output, from, to)
@@ -94,7 +94,7 @@ def ffmpeg_cut(input, output, from, to)
 end
 
 def add_silence_at_start(input, output, duration, channels)
-  `sox --no-dither #{input} #{output} pad #{duration} 0 channels #{channels}` # TODO: ffmpeg?
+  `sox --no-show-progress --no-dither #{input} #{output} pad #{duration} 0 channels #{channels}` # TODO: ffmpeg?
 end
 
 def split_files_to_segments(segments, temp_dir, options)
@@ -132,11 +132,11 @@ def mix_segments(segments, options)
   case mixer
   when MIXER_FFMPEG
     inputs = segments.map { |f| '-i ' + f[:file] }.join(' ')
-    `#{mixer} -y -v error #{inputs} -filter_complex amix=inputs=#{segments.length} #{output_file}` # TODO: channels
+    `#{mixer} -y -hide_banner -loglevel quiet #{inputs} -filter_complex amix=inputs=#{segments.length} #{output_file}` # TODO: channels
   when MIXER_SOX
     # FIXME: sox applies normalization here, which is unexpected
     inputs = segments.map { |f| f[:file] }.join(' ')
-    `#{mixer} --no-dither --combine mix-power #{inputs} #{output_file} channels #{channels}`
+    `#{mixer} --no-show-progress --no-dither --combine mix-power #{inputs} #{output_file} channels #{channels}`
   else
     raise "Unknown mixer \"#{mixer}\""
   end

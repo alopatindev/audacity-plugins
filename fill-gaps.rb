@@ -42,7 +42,7 @@ def compute_segments(temp_dir, options)
 
   new_segment_props = lambda { |from, to, is_gap|
     duration = to - from
-    segment = { from: from, to: to, duration: duration }
+    segment = { from: from, to: to, duration: duration, is_gap: is_gap }
     segment[:input] =
       if is_gap then { file: background_file, from: 0.0, to: duration }
       else { file: sound_file, from: from, to: to }
@@ -100,25 +100,41 @@ end
 def split_files_to_segments(segments, temp_dir, options)
   overlap_duration = options[:overlap_duration]
   channels = options[:channels]
+  fix_clicks = options[:fix_clicks]
 
   fade_duration = overlap_duration * 0.5
   fade_curve = 'log'
+
+  unclick_fade_curve = 'log'
+  click_duration = 0.160
+
   raw_file = File.join(temp_dir, 'tmp_raw.wav')
+  unclicked_file = File.join(temp_dir, 'tmp_unclicked.wav')
   fade_file = File.join(temp_dir, 'tmp_fade.wav')
 
   segments.each do |segment|
     overlap_start = segment[:duration] - fade_duration
     input = segment[:input]
+
+    click_start = segment[:duration] - click_duration
+    unclick_fade_out_args = "afade=t=out:st=#{click_start}:d=#{click_duration}:curve=#{unclick_fade_curve}"
+
+    fade_in_args = "afade=t=in:st=0:d=#{fade_duration}:curve=#{fade_curve}"
     fade_out_args = "afade=t=out:st=#{overlap_start}:d=#{overlap_duration}:curve=#{fade_curve}"
 
     ffmpeg_cut(input[:file], raw_file, input[:from], input[:to] + overlap_duration)
 
+    if fix_clicks && !segment[:is_gap]
+      ffmpeg(raw_file, unclicked_file, "-af #{unclick_fade_out_args}")
+    else
+      File.rename(raw_file, unclicked_file)
+    end
+
     first_segment = segment[:from] <= 0.0
     if first_segment
-      ffmpeg(raw_file, segment[:file], "-af #{fade_out_args}") # TODO: channels
+      ffmpeg(unclicked_file, segment[:file], "-af #{fade_out_args}") # TODO: channels
     else
-      fade_in_args = "afade=t=in:st=0:d=#{fade_duration}:curve=#{fade_curve}"
-      ffmpeg(raw_file, fade_file, "-af #{fade_out_args},#{fade_in_args}")
+      ffmpeg(unclicked_file, fade_file, "-af #{fade_out_args},#{fade_in_args}")
       add_silence_at_start(fade_file, segment[:file], segment[:from], channels)
     end
   end
@@ -159,6 +175,7 @@ def parse_options!(options)
     opts.on('-m', '--mixer [ffmpeg|sox]', 'Mixing tool (default ffmpeg)') { |m| options[:mixer] = m }
     opts.on('-c', '--channels [number]', 'Channels (default 1)') { |c| options[:channels] = c }
     opts.on('-d', '--temp-dir [path]', 'Temporary directory prefix (default /var/tmp)') { |d| options[:temp_dir_prefix] = d }
+    opts.on('-f', '--fix-clicks [true|false]', 'Fix possible clicks before gaps') { |f| options[:fix_clicks] = f == 'true' }
   end.parse!
 
   p options
@@ -170,6 +187,7 @@ end
 
 options = {
   channels: 1,
+  fix_clicks: true,
   min_gap_duration: 0.05,
   mixer: MIXER_FFMPEG,
   overlap_duration: 0.5,

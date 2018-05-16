@@ -14,11 +14,11 @@ Designed to fill empty spaces with background noise.
         - enable everything that matches the path `${HOME}/.audacity-files/plug-ins/*.ny`
 
 ## Dependencies
-- POSIX-compatible OS
+- POSIX-compatible OS (tested with GNU/Linux)
 - a **[patch for Audacity](https://raw.githubusercontent.com/alopatindev/gentoo-overlay-alopatindev/master/media-sound/audacity/files/audacity-9999-xsystem.patch)** which enables [a feature](https://forum.audacityteam.org/viewtopic.php?p=346798#p346798) that was removed for unknown reason
 - ffmpeg (tested with 3.3.6)
 - sox (tested with 14.4.2)
-- ruby (tested with 2.3.3)
+- ruby (tested with 2.5.1)
 
 # License
 This program is free software; you can redistribute it and/or modify

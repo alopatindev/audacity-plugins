@@ -93,13 +93,12 @@ def ffmpeg_cut(input, output, from, to)
   ffmpeg(input, output, "-ss #{from} -to #{to} -c copy")
 end
 
-def add_silence_at_start(input, output, duration, channels)
-  `sox --no-show-progress --no-dither #{input} #{output} pad #{duration} 0 channels #{channels}` # TODO: ffmpeg?
+def add_silence_at_start(input, output, duration)
+  `sox --no-show-progress --no-dither #{input} #{output} pad #{duration} 0 channels 1` # TODO: ffmpeg?
 end
 
 def split_files_to_segments(segments, temp_dir, options)
   overlap_duration = options[:overlap_duration]
-  channels = options[:channels]
   fix_clicks = options[:fix_clicks]
 
   fade_duration = overlap_duration * 0.5
@@ -132,10 +131,10 @@ def split_files_to_segments(segments, temp_dir, options)
 
     first_segment = segment[:from] <= 0.0
     if first_segment
-      ffmpeg(unclicked_file, segment[:file], "-af #{fade_out_args}") # TODO: channels
+      ffmpeg(unclicked_file, segment[:file], "-af #{fade_out_args}")
     else
       ffmpeg(unclicked_file, fade_file, "-af #{fade_out_args},#{fade_in_args}")
-      add_silence_at_start(fade_file, segment[:file], segment[:from], channels)
+      add_silence_at_start(fade_file, segment[:file], segment[:from])
     end
   end
 end
@@ -143,16 +142,15 @@ end
 def mix_segments(segments, options)
   output_file = options[:output]
   mixer = options[:mixer]
-  channels = options[:channels]
 
   case mixer
   when MIXER_FFMPEG
     inputs = segments.map { |f| '-i ' + f[:file] }.join(' ')
-    `#{mixer} -y -hide_banner -loglevel quiet #{inputs} -filter_complex amix=inputs=#{segments.length} #{output_file}` # TODO: channels
+    `#{mixer} -y -hide_banner -loglevel quiet #{inputs} -filter_complex amix=inputs=#{segments.length} #{output_file}`
   when MIXER_SOX
     # FIXME: sox applies normalization here, which is unexpected
     inputs = segments.map { |f| f[:file] }.join(' ')
-    `#{mixer} --no-show-progress --no-dither --combine mix-power #{inputs} #{output_file} channels #{channels}`
+    `#{mixer} --no-show-progress --no-dither --combine mix-power #{inputs} #{output_file} channels 1`
   else
     raise "Unknown mixer \"#{mixer}\""
   end
@@ -173,7 +171,6 @@ def parse_options!(options)
       options[:min_gap_duration] = t.to_f
     end
     opts.on('-m', '--mixer [ffmpeg|sox]', 'Mixing tool (default ffmpeg)') { |m| options[:mixer] = m }
-    opts.on('-c', '--channels [number]', 'Channels (default 1)') { |c| options[:channels] = c }
     opts.on('-d', '--temp-dir [path]', 'Temporary directory prefix (default /var/tmp)') { |d| options[:temp_dir_prefix] = d }
     opts.on('-f', '--fix-clicks [true|false]', 'Fix possible clicks before gaps') { |f| options[:fix_clicks] = f == 'true' }
   end.parse!
@@ -186,7 +183,6 @@ def parse_options!(options)
 end
 
 options = {
-  channels: 1,
   fix_clicks: true,
   min_gap_duration: 0.05,
   mixer: MIXER_FFMPEG,

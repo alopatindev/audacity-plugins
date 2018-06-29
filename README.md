@@ -20,6 +20,9 @@ Designed to fill empty spaces with background noise.
 - sox (tested with 14.4.2)
 - ruby (tested with 2.5.1)
 
+# Known Issues
+Audacity needs to be run from terminal in foreground mode (or else ffmpeg will send SIGTTOU and freeze Audacity).
+
 # License
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

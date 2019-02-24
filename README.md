@@ -5,6 +5,9 @@ Speeds up a sound without producing too much quality loss.
 
 ## Fill Gaps
 Designed to fill empty spaces with background noise.
+This plugin is unmaintained, use
+[AutoPunch](https://github.com/alopatindev/gentoo-overlay-alopatindev/blob/master/media-sound/audacity/files/audacity-9999-auto-punch.patch)
+instead.
 
 # Installation
 1. `mkdir -p ~/.audacity-files && git clone https://github.com/alopatindev/audacity-plugins ~/.audacity-files/plug-ins`
